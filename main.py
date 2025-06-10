@@ -1,0 +1,137 @@
+from argocd.client import ArgoCDClient
+from dotenv import load_dotenv
+import os
+import urllib3
+
+from argocd.utils import load_yaml
+urllib3.disable_warnings()
+
+load_dotenv()
+
+def main():
+  result = dict(
+        changed=False,
+        app={}
+    )
+  
+  app_name = "guestbook"
+  app_patch = """
+          metadata: 
+            labels: 
+              nar-instance-id: "111-1"
+          spec:
+            source:
+              repoURL: https://github.com/ratulbasak/argo_ui_extensions.git
+              path: deployments/guestbook
+              targetRevision: test
+            syncPolicy:
+              syncOptions:
+              - ApplyOutOfSyncOnly=true
+          """
+
+  try:
+      client = ArgoCDClient(
+          api_url=os.getenv('ARGOCD_API_URL'),
+          token=os.getenv('ARGOCD_AUTH_TOKEN'),
+          verify_ssl=os.getenv('ARGOCD_VERIFY_SSL'),
+          timeout=10,
+          proxies={
+              "http": "",
+              "https": ""
+          },
+          debug=False
+      )
+
+      # apps = client.list_applications({
+      #   "project": ["dev"],
+      #   "refresh": "hard"
+      # })
+
+      # print(apps)
+
+      app = client.get_application(name=app_name, query_params={
+        "project": ["default"],
+        "refresh": "hard"
+      })
+      print(f"App get successfully.")
+      # print(app)
+
+      app["spec"]["source"]["targetRevision"] = "test"
+      # app_update_body = {
+      #     "metadata": {
+      #         "name": "my-app",
+      #         "labels": {
+      #             "env": "prod"
+      #         }
+      #     },
+      #     "spec": {
+      #         "project": "default",
+      #         "source": {
+      #             "repoURL": "https://github.com/org/repo.git",
+      #             "path": "app",
+      #             "targetRevision": "v1.0.0"
+      #         },
+      #         "destination": {
+      #             "server": "https://kubernetes.default.svc",
+      #             "namespace": "default"
+      #         }
+      #     }
+      # }
+
+      # client.update_application(app, {"validate": True})
+
+
+
+
+      # manifests = client.get_application_manifests(app_name, {
+      #     "revision": "6b992b7",
+      #     "project": "default",
+      #     # "revisions": ["v1.2.3", "v1.2.2"]
+      # })
+      # print(manifests)
+
+      patch_data = load_yaml(app_patch)
+      patch = {
+          "metadata": {
+              "name": "guestbook",
+              "labels": {
+                  "env": "staging",
+                  "nar-instance-id": "111-1"
+              }
+          },
+          "spec": {
+              "source": {
+                  "targetRevision": "test"
+              }
+          }
+      }
+
+      client.patch_application(patch, {"validate": True})
+
+
+      # changed, app = client.patch_application(
+      #     app_name, patch_data
+      # )
+
+      # result['changed'] = changed
+      # result['app'] = app
+      # if changed:
+      #     print(f"App patched successfully.")
+
+      # changed, app = client.sync_application(
+      #   app_name=app_name,
+      #   prune=True,
+      #   dry_run=False,
+      #   strategy="apply"
+      # )
+
+      # result['changed'] = changed
+      # result['app'] = app
+      # if changed:
+      #     print(f"App synced successfully.")
+
+  except Exception as e:
+      print(e)
+
+if __name__ == '__main__':
+    main()
