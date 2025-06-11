@@ -5,7 +5,7 @@ from typing import Dict
 
 from .http import HttpClient
 from .utils import build_query_items, deep_merge
-from .api_routes import app, apps, app_sync, app_manifests, appsets
+from .api_routes import app, apps, app_sync, app_manifests, appsets, app_patch_resource
 from .logger import get_logger
 from .config import API_REQUEST_TIMEOUT
 from .validators import validate_query_params
@@ -146,6 +146,31 @@ class ArgoCDClient:
         self.logger.debug(f"Response {response.status_code}: {response.text}")
         if response.status_code != 200:
             raise Exception(f"Failed to patch application: {response.status_code}, {response.text}")
+        return response.json()
+
+
+    def patch_application_resource(
+        self,
+        name: str,
+        patch: str,
+        query_params: dict
+    ):
+        if not patch or not isinstance(patch, str):
+            raise ValueError("patch must be a raw JSON or YAML string.")
+
+        validate_query_params(query_params, "patch_resource")
+        query_string = urlencode(build_query_items(query_params))
+        path = app_patch_resource(name)
+        if query_string:
+            path += f"?{query_string}"
+
+        self.logger.info(f"Patching resource for app '{name}' with query: {query_string}")
+        response = self.http.post(path, payload=json.dumps(patch), content_type="application/json")
+
+        if response.status_code != 200:
+            self.logger.error(f"Failed to patch resource for application '{name}': {response.status_code}, {response.text}")
+            raise Exception(f"Failed to patch resource: {response.status_code}, {response.text}")
+
         return response.json()
 
 

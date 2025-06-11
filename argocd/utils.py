@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Tuple
 def load_yaml(data):
     return yaml.safe_load(data)
 
+
 def merge_lists(old_list, new_list):
     """
     Merge two lists. If all items are 'key=value', deduplicate by key.
@@ -13,10 +14,10 @@ def merge_lists(old_list, new_list):
     combined = old_list + new_list
 
     # Check if all items are in key=value format
-    if all('=' in item for item in combined):
+    if all("=" in item for item in combined):
         kv_map = {}
         for item in combined:
-            k, v = item.split('=', 1)
+            k, v = item.split("=", 1)
             kv_map[k] = v  # last one wins
         return [f"{k}={v}" for k, v in kv_map.items()]
     else:
