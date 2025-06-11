@@ -1,4 +1,5 @@
 import requests
+from .middleware import handle_response
 
 
 class HttpClient:
@@ -14,7 +15,6 @@ class HttpClient:
 
     def get(self, path):
         url = f"{self.base_url}{path}"
-        self.logger.info(f"GET {url}")
         resp = requests.get(
             url,
             headers=self.headers,
@@ -23,11 +23,10 @@ class HttpClient:
             proxies=self.proxies,
         )
         self._log_response(resp)
-        return resp
+        return handle_response(resp)
 
     def post(self, path, payload, content_type="application/json"):
         url = f"{self.base_url}{path}"
-        self.logger.info(f"POST {url}")
         self.logger.debug(f"POST {url} with body: {payload}")
         headers = self.headers.copy()
         headers["Content-Type"] = content_type
@@ -44,7 +43,6 @@ class HttpClient:
 
     def put(self, path, payload):
         url = f"{self.base_url}{path}"
-        self.logger.info(f"PUT {url}")
         self.logger.debug(f"PUT {url} with body: {payload}")
         resp = requests.put(
             url,
@@ -59,10 +57,8 @@ class HttpClient:
 
     def patch(self, path, raw_body, content_type="application/json"):
         url = f"{self.base_url}{path}"
-        self.logger.info(f"PATCH {url}")
         headers = self.headers.copy()
         headers["Content-Type"] = content_type
-
         self.logger.debug(f"PATCH {url} with raw body:\n{raw_body}")
         resp = requests.patch(
             url,

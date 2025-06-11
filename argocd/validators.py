@@ -40,6 +40,23 @@ ALLOWED_QUERY_PARAMS = {
     },
 }
 
+ALLOWED_SYNC_FIELDS = {
+    "appNamespace",
+    "dryRun",
+    "infos",
+    "manifests",
+    "name",
+    "project",
+    "prune",
+    "resources",
+    "retryStrategy",
+    "revision",
+    "revisions",
+    "sourcePositions",
+    "strategy",
+    "syncOptions",
+}
+
 
 def validate_query_params(query: Dict, context: str) -> None:
     allowed = ALLOWED_QUERY_PARAMS.get(context)
@@ -49,3 +66,9 @@ def validate_query_params(query: Dict, context: str) -> None:
     for key in query:
         if key not in allowed:
             raise ValueError(f"Unsupported query parameter '{key}' for '{context}'")
+
+
+def validate_sync_body(sync_body: dict):
+    for key in sync_body:
+        if key not in ALLOWED_SYNC_FIELDS:
+            raise ValueError(f"Unsupported sync field: '{key}'")

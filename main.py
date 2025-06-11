@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 import urllib3
 
+from argocd.middleware import ArgoCDResponseError
 from argocd.utils import load_yaml
 
 urllib3.disable_warnings()
@@ -15,6 +16,7 @@ def main():
     result = dict(changed=False, app={})
 
     app_name = "guestbook"
+    metaapp_name = "guesbook-metaapp"
     app_patch = """
         metadata: 
         labels: 
@@ -40,10 +42,7 @@ def main():
         )
 
         ## LIST APPLICATIONS
-        # apps = client.list_applications({
-        #   "project": ["dev"],
-        #   "refresh": "hard"
-        # })
+        apps = client.list_applications({"project": ["default"], "refresh": "hard"})
 
         # print(apps)
 
@@ -51,7 +50,8 @@ def main():
         app = client.get_application(
             name=app_name, query_params={"project": ["default"], "refresh": "hard"}
         )
-        print(f"App get successfully.")
+        # print(app)
+        # print(f"App get successfully.")
 
         ## UPDATE APPLICATION
         # app["spec"]["source"]["targetRevision"] = "test"
@@ -79,11 +79,14 @@ def main():
         # client.update_application(app, {"validate": True})
 
         ## GET APP MANIFESTS
-        # manifests = client.get_application_manifests(app_name, {
-        #     "revision": "6b992b7",
-        #     "project": "default",
-        #     # "revisions": ["v1.2.3", "v1.2.2"]
-        # })
+        # manifests = client.get_application_manifests(
+        #     metaapp_name,
+        #     {
+        #         "revision": "6b992b7",
+        #         "project": "default",
+        #         # "revisions": ["v1.2.3", "v1.2.2"]
+        #     },
+        # )
         # print(manifests)
         # manifests = manifests["manifests"]
 
@@ -116,19 +119,6 @@ def main():
         # client.patch_application(patch, {"validate": True})
         # print(f"App patched successfully.")
 
-        ## SYNC APPLICATION
-        # changed, app = client.sync_application(
-        #   app_name=app_name,
-        #   prune=True,
-        #   dry_run=False,
-        #   strategy="apply"
-        # )
-
-        # result['changed'] = changed
-        # result['app'] = app
-        # if changed:
-        #     print(f"App synced successfully.")
-
         ## PATCH SPECIFIC APPLICATION RESOURCE
         query = {
             "namespace": "guestbook",
@@ -142,6 +132,42 @@ def main():
         patch_body = '{"spec": {"replicas": 3}}'
 
         client.patch_application_resource(app_name, patch_body, query)
+
+        ## SYNC APPLICATION
+        # app = client.sync_application(
+        #   app_name=app_name,
+        #   prune=True,
+        #   dry_run=False,
+        #   strategy="apply"
+        # )
+
+        sync_request = {
+            "dryRun": True,
+            "prune": True,
+            "revision": "test",
+            "strategy": {"apply": {"force": False}},
+            "syncOptions": {
+                "items": [
+                    "ApplyOutOfSyncOnly=true",
+                    "ServerSideApply=true",
+                    "Replace=true",
+                ]
+            },
+        }
+
+        # result = client.sync_application(app_name, sync_request)
+        # print(result)
+        client.sync_application_simplified(
+            name=app_name,
+            # revision="test",
+            force=False,
+            prune=True,
+            dry_run=False,
+            sync_options=["CreateNamespace=true"],
+            wait=True,
+            timeout=90,
+        )
+        print(f"App synced successfully.")
 
     except Exception as e:
         print(e)
