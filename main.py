@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import os
 import urllib3
 
-from argocd.middleware import ArgoCDResponseError
 from argocd.utils import load_yaml
 
 urllib3.disable_warnings()
