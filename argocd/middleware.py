@@ -57,9 +57,8 @@ def handle_response(resp):
     if 200 <= status < 300:
         if "application/json" in content_type:
             try:
-                # print(resp.json())
                 success_body = resp.json()
-                return {"success": True, "status_code": status, "data": resp.json()}
+                return {"success": True, "status_code": status, "data": success_body}
             except Exception:
                 logger.warning(
                     "Response claims JSON but failed to parse. Returning raw body."

@@ -101,12 +101,13 @@ class ArgoCDClient:
             path += f"?{query_string}"
 
         self.logger.info(f"Updating application '{app_name}'")
-        response = self.http.put(path, payload=json.dumps(app_body))
-        if response.status_code != 200:
-            raise Exception(
-                f"Failed to update application: {response.status_code}, {response.text}"
-            )
-        return response.json()
+        return self.http.put(path, payload=json.dumps(app_body))
+        # response = self.http.put(path, payload=json.dumps(app_body))
+        # if response.status_code != 200:
+        #     raise Exception(
+        #         f"Failed to update application: {response.status_code}, {response.text}"
+        #     )
+        # return response.json()
 
     def patch_application(self, patch: dict, query_params: dict = None):
         query_params = query_params or {}
@@ -121,7 +122,7 @@ class ArgoCDClient:
         if not current_app:
             raise Exception(f"Application '{app_name}' does not exist.")
 
-        updated_app = copy.deepcopy(current_app)
+        updated_app = copy.deepcopy(current_app["data"])
         deep_merge(updated_app, patch)
 
         query_string = urlencode(build_query_items(query_params))
@@ -130,14 +131,14 @@ class ArgoCDClient:
             path += f"?{query_string}"
 
         self.logger.info(f"Partially updating application '{app_name}'")
-
-        response = self.http.put(path, json.dumps(updated_app))
-        self.logger.debug(f"Response {response.status_code}: {response.text}")
-        if response.status_code != 200:
-            raise Exception(
-                f"Failed to patch application: {response.status_code}, {response.text}"
-            )
-        return response.json()
+        return self.http.put(path, json.dumps(updated_app))
+        # response = self.http.put(path, json.dumps(updated_app))
+        # self.logger.debug(f"Response {response.status_code}: {response.text}")
+        # if response.status_code != 200:
+        #     raise Exception(
+        #         f"Failed to patch application: {response.status_code}, {response.text}"
+        #     )
+        # return response.json()
 
     def patch_application_resource(self, name: str, patch: str, query_params: dict):
         if not patch or not isinstance(patch, str):
@@ -152,29 +153,22 @@ class ArgoCDClient:
         self.logger.info(
             f"Patching resource for app '{name}' with query: {query_string}"
         )
-        response = self.http.post(
+        return self.http.post(
             path, payload=json.dumps(patch), content_type="application/json"
         )
+        # response = self.http.post(
+        #     path, payload=json.dumps(patch), content_type="application/json"
+        # )
 
-        if response.status_code != 200:
-            self.logger.error(
-                f"Failed to patch resource for application '{name}': {response.status_code}, {response.text}"
-            )
-            raise Exception(
-                f"Failed to patch resource: {response.status_code}, {response.text}"
-            )
+        # if response.status_code != 200:
+        #     self.logger.error(
+        #         f"Failed to patch resource for application '{name}': {response.status_code}, {response.text}"
+        #     )
+        #     raise Exception(
+        #         f"Failed to patch resource: {response.status_code}, {response.text}"
+        #     )
 
-        return response.json()
-
-    def create_or_update_appset(self, appset_name, appset_spec):
-        payload = {"metadata": {"name": appset_name}, "spec": appset_spec}
-        response = self.http.post(path=appsets(), payload=json.dumps(payload))
-        self.logger.debug(f"Response {response.status_code}: {response.text}")
-        if response.status_code not in [200, 201]:
-            raise Exception(
-                f"Failed to create/update ApplicationSet: {response.status_code}, {response.text}"
-            )
-        return response.json()
+        # return response.json()
 
     def get_application_status(self, app_name):
         app = self.get_application(app_name)
@@ -219,13 +213,14 @@ class ArgoCDClient:
 
         path = app_sync(name)
         self.logger.info(f"Syncing application '{name}' with full payload")
-        response = self.http.post(path, payload=json.dumps(sync_body))
+        return self.http.post(path, payload=json.dumps(sync_body))
+        # response = self.http.post(path, payload=json.dumps(sync_body))
 
-        if response.status_code != 200:
-            raise Exception(
-                f"Failed to sync application: {response.status_code}, {response.text}"
-            )
-        return response.json()
+        # if response.status_code != 200:
+        #     raise Exception(
+        #         f"Failed to sync application: {response.status_code}, {response.text}"
+        #     )
+        # return response.json()
 
     def sync_application_simplified(
         self,
@@ -262,33 +257,30 @@ class ArgoCDClient:
                 raise Exception(
                     f"Application '{name}' did not reach Synced/Healthy state."
                 )
-            return {
-                "synced": True,
-                "message": "Sync completed successfully.",
-                "result": result,
-            }
+            result["message"] = "Sync completed successfully."
+            result["synced"] = True
+            return result
 
-        return {
-            "synced": False,
-            "message": "Sync triggered (not waiting).",
-            "result": result,
-        }
+        result["message"] = "Sync triggered (not waiting)."
+        result["synced"] = False
+        return result
 
     def sync_application(self, name: str, sync_body: dict):
         if not isinstance(sync_body, dict):
             raise ValueError("sync_body must be a dictionary.")
 
         validate_sync_body(sync_body)
+        return self.http.post(app_sync(name), payload=json.dumps(sync_body))
 
-        self.logger.info(
-            f"Triggering sync for \napplication: '{name}' \npayload: {sync_body}"
-        )
-        self.logger.debug(
-            f"Triggering sync for \napplication: '{name}' \npayload: {sync_body}"
-        )
-        response = self.http.post(app_sync(name), payload=json.dumps(sync_body))
-        if response.status_code != 200:
-            raise Exception(
-                f"Failed to sync application: {response.status_code}, {response.text}"
-            )
-        return response.json()
+        # self.logger.info(
+        #     f"Triggering sync for \napplication: '{name}' \npayload: {sync_body}"
+        # )
+        # self.logger.debug(
+        #     f"Triggering sync for \napplication: '{name}' \npayload: {sync_body}"
+        # )
+        # response = self.http.post(app_sync(name), payload=json.dumps(sync_body))
+        # if response.status_code != 200:
+        #     raise Exception(
+        #         f"Failed to sync application: {response.status_code}, {response.text}"
+        #     )
+        # return response.json()

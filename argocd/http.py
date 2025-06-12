@@ -39,7 +39,7 @@ class HttpClient:
             proxies=self.proxies,
         )
         self._log_response(resp)
-        return resp
+        return handle_response(resp)
 
     def put(self, path, payload):
         url = f"{self.base_url}{path}"
@@ -53,7 +53,7 @@ class HttpClient:
             proxies=self.proxies,
         )
         self._log_response(resp)
-        return resp
+        return handle_response(resp)
 
     def patch(self, path, raw_body, content_type="application/json"):
         url = f"{self.base_url}{path}"
@@ -69,7 +69,7 @@ class HttpClient:
             proxies=self.proxies,
         )
         self._log_response(resp)
-        return resp
+        return handle_response(resp)
 
     def _log_response(self, resp):
         self.logger.debug(f"Response {resp.status_code}: {resp.text}")
